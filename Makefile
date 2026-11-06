@@ -1,2 +1,5 @@
 all:
-	g++ main.cpp -o main
+	g++ main.cpp log.cpp -o main
+
+clear:
+	rm -f main
