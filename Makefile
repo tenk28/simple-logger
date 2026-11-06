@@ -1,5 +1,5 @@
 all:
-	g++ main.cpp log.cpp -o main
+	g++ src/*.cpp -o main
 
 clear:
 	rm -f main
