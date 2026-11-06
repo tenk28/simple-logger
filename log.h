@@ -1,7 +1,7 @@
 #ifndef LOG_H
 #define LOG_H
 
-#include <iostream>
+#include <sstream>
 #include <ctime>
 #include <iomanip>
 #include <thread>
@@ -20,12 +20,16 @@ Logger getLogger(std::string prefix = "");
 
 class LogLine {
 public:
+    LogLine(std::ostringstream&& stream);
+
     template <typename T>
     LogLine& operator<< (const T& obj) {
-        std::cout << obj;
+        m_stream << obj;
         return *this;
     }
     ~LogLine();
+private:
+    std::ostringstream m_stream;
 };
 
 class Logger {
@@ -40,12 +44,13 @@ public:
         // 23.02.2020 18:06:06; INFO; (1020):
         const std::time_t now = std::time(nullptr);
 
-        std::cout << std::put_time(localtime(&now), "%d.%m.%Y %T") << "; "
+        std::ostringstream stream;
+        stream << std::put_time(localtime(&now), "%d.%m.%Y %T") << "; "
             << getLogLevelStr(m_log_level) << "; "
             << m_prefix << '(' << std::this_thread::get_id() << "): "
             << obj;
 
-        return LogLine();
+        return LogLine(std::move(stream));
     }
 
 private:

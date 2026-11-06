@@ -1,5 +1,7 @@
 #include "log.h"
 
+#include <iostream>
+
 const char* getLogLevelStr(LogLevel level) {
     switch (level)
     {
@@ -20,8 +22,12 @@ Logger getLogger(std::string prefix) {
     return Logger(prefix);
 }
 
+LogLine::LogLine(std::ostringstream&& stream)
+    : m_stream(std::move(stream)) {}
+
 LogLine::~LogLine() {
-    std::cout << std::endl;
+    m_stream << '\n';
+    std::cout << m_stream.str();
 }
 
 Logger::Logger(std::string prefix)
