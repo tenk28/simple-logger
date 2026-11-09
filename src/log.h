@@ -2,9 +2,10 @@
 #define LOG_H
 
 #include <sstream>
-#include <ctime>
-#include <iomanip>
+#include <chrono>
+#include <format>
 #include <thread>
+#include <string_view>
 
 enum LogLevel {
     INFO,
@@ -15,48 +16,51 @@ enum LogLevel {
 
 class Logger;
 
-const char* getLogLevelStr(LogLevel level);
 Logger getLogger(std::string prefix = "");
+
+[[nodiscard]] constexpr std::string_view getLogLevelStr(LogLevel level) {
+    switch (level) {
+    case INFO:    return "INFO";
+    case DEBUG:   return "DEBUG";
+    case WARNING: return "WARNING";
+    case ERROR:   return "ERROR";
+    default:      return "UNKNOWN";
+    }
+}
 
 class LogLine {
 public:
-    LogLine(std::ostringstream&& stream);
+    explicit LogLine(std::ostringstream&& stream);
+    ~LogLine();
+
+    LogLine(LogLine&&) = default;
+    LogLine& operator=(LogLine&&) = default;
+    LogLine(const LogLine&) = delete;
+    LogLine& operator=(const LogLine&) = delete;
 
     template <typename T>
     LogLine& operator<< (const T& obj) {
         m_stream << obj;
         return *this;
     }
-    ~LogLine();
 private:
     std::ostringstream m_stream;
 };
 
 class Logger {
 public:
-    Logger(std::string prefix = "");
+    explicit Logger(std::string prefix = "");
 
-    Logger operator() (LogLevel level);
+    LogLine operator() (LogLevel level);
 
     template <typename T>
     LogLine operator<< (const T& obj) {
-        // example
-        // 23.02.2020 18:06:06; INFO; (1020):
-        const std::time_t now = std::time(nullptr);
-
-        std::ostringstream stream;
-        stream << std::put_time(localtime(&now), "%d.%m.%Y %T") << "; "
-            << getLogLevelStr(m_log_level) << "; "
-            << m_prefix << '(' << std::this_thread::get_id() << "): "
-            << obj;
-
-        return LogLine(std::move(stream));
+        LogLine line = (*this)(INFO);
+        line << obj;
+        return line;
     }
 
 private:
-    Logger(const Logger& logger, LogLevel log_level);
-
-    LogLevel m_log_level = INFO;
     std::string m_prefix;
 };
 

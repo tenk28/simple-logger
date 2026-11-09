@@ -1,41 +1,35 @@
 #include "log.h"
 
 #include <iostream>
-
-const char* getLogLevelStr(LogLevel level) {
-    switch (level)
-    {
-    case INFO:
-        return "INFO";
-    case DEBUG:
-        return "DEBUG";
-    case WARNING:
-        return "WARNING";
-    case ERROR:
-        return "ERROR";
-    default:
-        return "UNKNOWN";
-    }
-}
+#include <syncstream>
 
 Logger getLogger(std::string prefix) {
-    return Logger(prefix);
+    return Logger{std::move(prefix)};
 }
 
 LogLine::LogLine(std::ostringstream&& stream)
-    : m_stream(std::move(stream)) {}
+    : m_stream{std::move(stream)} {}
 
 LogLine::~LogLine() {
     m_stream << '\n';
-    std::cout << m_stream.str();
+    std::osyncstream{std::cout} << m_stream.str();
 }
 
 Logger::Logger(std::string prefix)
-    : m_prefix(prefix) {}
+    : m_prefix{std::move(prefix)} {}
 
-Logger Logger::operator() (LogLevel level) {
-    return Logger(*this, level);
+LogLine Logger::operator() (LogLevel level) {
+    // example
+    // 23.02.2020 18:06:06; INFO; (1020):
+    const auto now = std::chrono::zoned_time{
+        std::chrono::current_zone(),
+        std::chrono::floor<std::chrono::seconds>(std::chrono::system_clock::now())
+    };
+
+    std::ostringstream stream;
+    stream << std::format("{:%d.%m.%Y %T}", now) << "; "
+        << getLogLevelStr(level) << "; "
+        << m_prefix << '(' << std::this_thread::get_id() << "): ";
+
+return LogLine{std::move(stream)};
 }
-
-Logger::Logger(const Logger& logger, LogLevel log_level)
-    : m_prefix(logger.m_prefix), m_log_level(log_level) {}
